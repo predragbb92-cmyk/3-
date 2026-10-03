@@ -1,0 +1,4083 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Zaokruži tri - Izborno Izdanje</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    body {
+      background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+      color: #f8fafc;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 860px;
+      height: 94vh;
+      max-height: 720px;
+      background: #020617;
+      border: 3px solid #3b82f6;
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9),
+                  0 0 30px rgba(59, 130, 246, 0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #hud {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 8px;
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 2px solid #1e293b;
+      z-index: 5;
+    }
+
+    .hud-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hud-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #94a3b8;
+    }
+
+    .hud-value {
+      font-size: 14px;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+
+    .segment-badge {
+      background: linear-gradient(135deg, #312e81 0%, #1e1b4b 100%);
+      padding: 4px 10px;
+      border-radius: 16px;
+      border: 1px solid #6366f1;
+      font-size: 11px;
+      font-weight: bold;
+      color: #c084fc;
+      text-align: center;
+    }
+
+    #brain-bar-container {
+      width: 100%;
+      background: #0f172a;
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .brain-label {
+      font-size: 12px;
+      font-weight: bold;
+      color: #a855f7;
+      white-space: nowrap;
+    }
+
+    .brain-bar-bg {
+      flex: 1;
+      height: 12px;
+      background: #1e293b;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #334155;
+    }
+
+    .brain-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ef4444 0%, #a855f7 50%, #4ade80 100%);
+      transition: width 0.4s ease-out;
+    }
+
+    #question-card {
+      background: #1e293b;
+      border-bottom: 2px solid #334155;
+      padding: 10px 16px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #f1f5f9;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.35;
+    }
+
+    #canvas-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      background: radial-gradient(circle at center, #1e293b 0%, #090d16 100%);
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #strike-prompt {
+      position: absolute;
+      top: 8%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      padding: 8px 22px;
+      border-radius: 30px;
+      font-size: 18px;
+      font-weight: 900;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.9);
+      pointer-events: none;
+      display: none;
+      animation: pulse 0.15s infinite alternate;
+      z-index: 4;
+      border: 2px solid #fef08a;
+      text-align: center;
+    }
+
+    @keyframes pulse {
+      0% { transform: translateX(-50%) scale(0.95); }
+      100% { transform: translateX(-50%) scale(1.08); }
+    }
+
+    .tap-hint {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85);
+      color: #cbd5e1;
+      padding: 5px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      pointer-events: none;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      z-index: 3;
+      white-space: nowrap;
+    }
+
+    #quiz-options-container {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 600px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      z-index: 6;
+    }
+
+    .quiz-options-container.hidden {
+      display: none !important;
+    }
+
+    .quiz-btn {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 2px solid #3b82f6;
+      color: #f8fafc;
+      padding: 12px 14px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .quiz-btn:active {
+      transform: scale(0.96);
+    }
+
+    .quiz-btn.correct {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      border-color: #4ade80;
+      color: white;
+    }
+
+    .quiz-btn.wrong {
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      border-color: #f87171;
+      color: white;
+    }
+
+    .quiz-btn:disabled {
+      cursor: default;
+      opacity: 0.95;
+    }
+
+    #quiz-feedback {
+      position: absolute;
+      left: 50%;
+      bottom: 205px;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 600px;
+      background: rgba(2, 6, 23, 0.97);
+      border: 2px solid #334155;
+      border-radius: 16px;
+      padding: 12px 15px;
+      z-index: 8;
+      display: none;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,.6);
+    }
+
+    #quiz-feedback-title {
+      font-size: 17px;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    #quiz-feedback-text {
+      font-size: 13px;
+      line-height: 1.4;
+      color: #cbd5e1;
+      margin-bottom: 10px;
+    }
+
+    #quiz-next {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+      border: none;
+      padding: 9px 24px;
+      border-radius: 22px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(2, 6, 23, 0.95);
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      text-align: center;
+      z-index: 10;
+      overflow-y: auto;
+    }
+
+    .modal.hidden {
+      display: none !important;
+    }
+
+    .modal-title {
+      font-size: 28px;
+      font-weight: 900;
+      color: #facc15;
+      text-shadow: 0 0 15px rgba(250, 204, 21, 0.5);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .modal-desc {
+      font-size: 14px;
+      color: #cbd5e1;
+      max-width: 560px;
+      line-height: 1.5;
+      margin-bottom: 22px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      font-size: 16px;
+      font-weight: 800;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.5);
+      transition: transform 0.1s;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.95);
+    }
+
+    #briefing-list {
+      width: 100%;
+      max-width: 680px;
+      text-align: left;
+      margin: 5px 0 20px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .briefing-item {
+      background: rgba(30, 41, 59, .85);
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 8px 11px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .briefing-item b {
+      color: #38bdf8;
+    }
+
+    @media (max-width: 600px) {
+      #hud {
+        padding: 7px 4px;
+      }
+
+      .hud-label {
+        font-size: 8px;
+      }
+
+      .hud-value {
+        font-size: 11px;
+      }
+
+      .segment-badge {
+        font-size: 9px;
+        padding: 3px 6px;
+      }
+
+      #brain-bar-container {
+        padding: 5px 8px;
+      }
+
+      .brain-label {
+        font-size: 10px;
+      }
+
+      #question-card {
+        font-size: 12px;
+        min-height: 48px;
+      }
+
+      .quiz-btn {
+        font-size: 12px;
+        padding: 10px 7px;
+      }
+
+      #quiz-feedback {
+        bottom: 185px;
+      }
+
+      .modal {
+        padding: 16px;
+      }
+
+      .modal-title {
+        font-size: 23px;
+      }
+
+      .modal-desc {
+        font-size: 12px;
+      }
+
+      .briefing-item {
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="game-container">
+
+  <div id="hud">
+    <div class="hud-box">
+      <span class="hud-label">Segment</span>
+      <span class="segment-badge" id="hud-segment">1 / 3</span>
+    </div>
+
+    <div class="hud-box">
+      <span class="hud-label">Nivo</span>
+      <span class="hud-value" id="hud-level">1 / 9</span>
+    </div>
+
+    <div class="hud-box">
+      <span class="hud-label">Oruđe / Režim</span>
+      <span class="hud-value" id="hud-weapon" style="color:#facc15;">📚 Knjiga</span>
+    </div>
+
+    <div class="hud-box">
+      <span class="hud-label">Udaraca/Odgovora</span>
+      <span class="hud-value" id="hud-hits">0 / 3</span>
+    </div>
+
+    <div class="hud-box">
+      <span class="hud-label">Ugriz / Greške</span>
+      <span class="hud-value" id="hud-misses" style="color:#f87171;">0 / 3</span>
+    </div>
+  </div>
+
+  <div id="brain-bar-container">
+    <span class="brain-label">🧠 Svest i Pravno Znanje:</span>
+    <div class="brain-bar-bg">
+      <div class="brain-bar-fill" id="brain-fill"></div>
+    </div>
+  </div>
+
+  <div id="question-card">
+    <span id="question-text">
+      Udari Ćacija direktnim tapom/klikom na ekran čim otvori usta!
+    </span>
+  </div>
+
+  <div id="canvas-container">
+
+    <div id="strike-prompt">⚡ TRESNI GA SADA! ⚡</div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="tap-hint" id="tap-hint-text">
+      💡 Tapni/Klikni bilo gde po ekranu da udariš!
+    </div>
+
+    <div id="quiz-options-container"
+         class="quiz-options-container hidden">
+    </div>
+
+    <div id="quiz-feedback">
+      <div id="quiz-feedback-title"></div>
+      <div id="quiz-feedback-text"></div>
+      <button id="quiz-next">NASTAVI</button>
+    </div>
+
+  </div>
+
+
+  <!-- START -->
+
+  <div id="modal-start" class="modal">
+
+    <h1 class="modal-title">ZAOKRUŽI TRI</h1>
+
+    <p class="modal-desc">
+      <b>IZBORNO IZDANJE — 9 NIVOA KROZ 3 SEGMENTA</b><br><br>
+
+      <b>SEGMENT 1: OSVESTI ĆACIJA</b><br>
+      Udari zombi Ćacija direktnim tapom na ekranu!
+      Potrebna su 3 uspešna udarca po nivou.<br><br>
+
+      <b>SEGMENT 2: NAUČI STUDENTA — IZBORNI DAN</b><br>
+      Svaki nivo ima 5 pitanja o osnovnim pravilima glasanja.<br><br>
+
+      <b>SEGMENT 3: STUDENT UČI ĆACIJA — KRAĐA KOŠTA</b><br>
+      Pet pitanja po nivou o krivičnim delima protiv izbornih prava.
+    </p>
+
+    <button class="btn-primary" id="btn-start">
+      ZAPOČNI IGRU
+    </button>
+
+  </div>
+
+
+  <!-- BRIEFING -->
+
+  <div id="modal-briefing" class="modal hidden">
+
+    <h1 class="modal-title" style="color:#38bdf8;">
+      PRE NEGO ŠTO KRENEŠ 📚
+    </h1>
+
+    <p class="modal-desc">
+      Zapamti ovih 10 osnovnih činjenica o izbornom danu.
+      Kasnije će ti pomoći u kvizu.
+    </p>
+
+    <div id="briefing-list">
+
+      <div class="briefing-item">
+        <b>1.</b> Biračka mesta se otvaraju u <b>07:00</b>,
+        a zatvaraju u <b>20:00</b>.
+      </div>
+
+      <div class="briefing-item">
+        <b>2.</b> Glasanje se obavlja na biračkom mestu
+        prema pravilima izbornog postupka.
+      </div>
+
+      <div class="briefing-item">
+        <b>3.</b> Glasanje je <b>tajno</b>.
+      </div>
+
+      <div class="briefing-item">
+        <b>4.</b> Birački odbor neposredno sprovodi glasanje
+        i obezbeđuje pravilnost i tajnost glasanja.
+      </div>
+
+      <div class="briefing-item">
+        <b>5.</b> Na izborima za narodne poslanike glasa se
+        zaokruživanjem <b>rednog broja ispred naziva izborne liste</b>.
+      </div>
+
+      <div class="briefing-item">
+        <b>6.</b> Birač svoj izbor donosi <b>samostalno</b>;
+        niko ne sme silom ili pretnjom da ga prinudi kako da glasa.
+      </div>
+
+      <div class="briefing-item">
+        <b>7.</b> Nuđenje, davanje, obećavanje, traženje ili primanje
+        koristi radi uticanja na glasanje može predstavljati krivično delo.
+      </div>
+
+      <div class="briefing-item">
+        <b>8.</b> Glasanje umesto drugog, višestruko glasanje
+        ili korišćenje više glasačkih listića je zabranjeno.
+      </div>
+
+      <div class="briefing-item">
+        <b>9.</b> Povreda tajnosti glasanja može predstavljati
+        krivično delo.
+      </div>
+
+      <div class="briefing-item">
+        <b>10.</b> Menjanje rezultata glasanja i uništavanje,
+        oštećivanje, oduzimanje ili prikrivanje izbornih dokumenata
+        može predstavljati krivično delo.
+      </div>
+
+    </div>
+
+    <button class="btn-primary" id="btn-briefing-start">
+      ZAPOČNI PRVI NIVO
+    </button>
+
+  </div>
+
+
+  <!-- INTERMISSION -->
+
+  <div id="modal-intermission" class="modal hidden">
+
+    <h1 class="modal-title"
+        id="intermission-title"
+        style="color:#38bdf8;">
+      NIVO PREĐEN! 🎉
+    </h1>
+
+    <p class="modal-desc" id="intermission-desc">
+      Uspešno si savladao ovaj izazov!
+    </p>
+
+    <button class="btn-primary" id="btn-next-level">
+      NASTAVI DALJE
+    </button>
+
+  </div>
+
+
+  <!-- GAME OVER -->
+
+  <div id="modal-gameover" class="modal hidden">
+
+    <h1 class="modal-title" style="color:#ef4444;">
+      GAME OVER 💀
+    </h1>
+
+    <p class="modal-desc" id="gameover-desc">
+      Napravio si previše grešaka!
+    </p>
+
+    <button class="btn-primary" id="btn-restart">
+      POKUŠAJ PONOVO
+    </button>
+
+  </div>
+
+
+  <!-- VICTORY -->
+
+  <div id="modal-victory" class="modal hidden">
+
+    <h1 class="modal-title" style="color:#4ade80;">
+      POBEDA! 🎓🗳️
+    </h1>
+
+    <p class="modal-desc">
+      <b>
+        ČESTITAMO! DIPLOMIRANI STUDENT ĆACI JE NAUČIO
+        OSNOVNA IZBORNA PRAVILA I KRIVIČNOPRAVNU ZAŠTITU
+        IZBORNIH PRAVA!
+      </b>
+      <br><br>
+
+      Završio si svih 9 nivoa i svih 30 pitanja
+      iz izbornog i krivičnopravnog dela igre.
+    </p>
+
+    <button class="btn-primary" id="btn-play-again">
+      IGRAJ PONOVO
+    </button>
+
+  </div>
+
+</div>
+
+
+<script>
+
+const AudioEngine = {
+
+  ctx: null,
+
+  init() {
+    if (!this.ctx) {
+      const AudioContext =
+        window.AudioContext || window.webkitAudioContext;
+
+      if (AudioContext) {
+        this.ctx = new AudioContext();
+      }
+    }
+
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  },
+
+  vibrate(pattern) {
+    if (navigator.vibrate) {
+      navigator.vibrate(pattern);
+    }
+  },
+
+  playHit() {
+    if (!this.ctx) return;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+
+    osc.frequency.setValueAtTime(
+      260,
+      this.ctx.currentTime
+    );
+
+    osc.frequency.exponentialRampToValueAtTime(
+      40,
+      this.ctx.currentTime + 0.12
+    );
+
+    gain.gain.setValueAtTime(
+      1,
+      this.ctx.currentTime
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.01,
+      this.ctx.currentTime + 0.12
+    );
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.12);
+
+    this.vibrate(40);
+  },
+
+  playBite() {
+    if (!this.ctx) return;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+
+    osc.frequency.setValueAtTime(
+      320,
+      this.ctx.currentTime
+    );
+
+    osc.frequency.linearRampToValueAtTime(
+      110,
+      this.ctx.currentTime + 0.2
+    );
+
+    gain.gain.setValueAtTime(
+      0.7,
+      this.ctx.currentTime
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.01,
+      this.ctx.currentTime + 0.2
+    );
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.2);
+
+    this.vibrate([60,30,60]);
+  },
+
+  playVictory() {
+    if (!this.ctx) return;
+
+    const notes = [
+      261.63,
+      329.63,
+      392.00,
+      523.25,
+      659.25,
+      783.99
+    ];
+
+    notes.forEach((freq, idx) => {
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+
+      osc.frequency.setValueAtTime(
+        freq,
+        this.ctx.currentTime + idx * 0.08
+      );
+
+      gain.gain.setValueAtTime(
+        0.3,
+        this.ctx.currentTime + idx * 0.08
+      );
+
+      gain.gain.exponentialRampToValueAtTime(
+        0.01,
+        this.ctx.currentTime +
+        idx * 0.08 +
+        0.22
+      );
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(
+        this.ctx.currentTime + idx * 0.08
+      );
+
+      osc.stop(
+        this.ctx.currentTime +
+        idx * 0.08 +
+        0.22
+      );
+
+    });
+
+    this.vibrate([100,50,100,50,200]);
+  }
+};
+
+
+/* =========================================================
+   LEVELS
+   ========================================================= */
+
+const GAME_LEVELS = [
+
+  /* =========================
+     SEGMENT 1
+     ========================= */
+
+  {
+    segment: 1,
+    segmentName: "OSVESTI ĆACIJA",
+    level: 1,
+    weapon: "Knjiga",
+    attackWindow: 1300,
+    idleTime: 1600,
+    speed: 2.0,
+    text:
+      "Nivo 1: Klikni na ekran dok Ćaci drži otvorena usta! (Potrebna 3 udarca)"
+  },
+
+  {
+    segment: 1,
+    segmentName: "OSVESTI ĆACIJA",
+    level: 2,
+    weapon: "Indeks",
+    attackWindow: 1000,
+    idleTime: 1300,
+    speed: 3.2,
+    text:
+      "Nivo 2: Ćaci je brži! Ne dozvoli da ti pojede sendvič! (Potrebna 3 udarca)"
+  },
+
+  {
+    segment: 1,
+    segmentName: "OSVESTI ĆACIJA",
+    level: 3,
+    weapon: "Olovka",
+    attackWindow: 750,
+    idleTime: 950,
+    speed: 4.8,
+    text:
+      "Nivo 3: Super brzi Ćaci! Pogodi ga na vreme! (Potrebna 3 udarca)"
+  },
+
+
+  /* =========================
+     SEGMENT 2
+     ========================= */
+
+  {
+    segment: 2,
+    segmentName: "NAUČI STUDENTA - IZBORNI DAN",
+    level: 4,
+    text: "Nivo 4: Osnovna pravila izbornog dana",
+
+    questions: [
+
+      {
+        q: "Biračka mesta se na dan izbora otvaraju u:",
+        options: ["06:00", "07:00", "08:00", "09:00"],
+        correct: "07:00",
+        explanation:
+          "Biračka mesta se otvaraju u 07:00, a zatvaraju u 20:00 časova."
+      },
+
+      {
+        q: "Biračka mesta se zatvaraju u:",
+        options: ["18:00", "19:00", "20:00", "21:00"],
+        correct: "20:00",
+        explanation:
+          "Redovno vreme glasanja traje od 07:00 do 20:00."
+      },
+
+      {
+        q: "Koje osnovno pravilo mora biti obezbeđeno tokom glasanja?",
+        options: [
+          "Javno izjašnjavanje",
+          "Tajnost glasanja",
+          "Glasanje pred publikom",
+          "Obavezno fotografisanje listića"
+        ],
+        correct: "Tajnost glasanja",
+        explanation:
+          "Glasanje je tajno i postupak mora biti organizovan tako da se tajnost obezbedi."
+      },
+
+      {
+        q: "Ko neposredno sprovodi glasanje na biračkom mestu?",
+        options: [
+          "Birački odbor",
+          "Policija",
+          "Novinari",
+          "Kandidati"
+        ],
+        correct: "Birački odbor",
+        explanation:
+          "Birački odbor neposredno sprovodi glasanje i obezbeđuje pravilnost i tajnost glasanja."
+      },
+
+      {
+        q: "Zašto postoji prostor za tajno glasanje?",
+        options: [
+          "Da bi birač mogao samostalno i tajno da označi svoj izbor",
+          "Da bi birački odbor video izbor",
+          "Da bi drugi birači mogli da provere listić",
+          "Da bi se listić fotografisao"
+        ],
+        correct:
+          "Da bi birač mogao samostalno i tajno da označi svoj izbor",
+        explanation:
+          "Tajnost glasanja štiti birača od toga da drugi saznaju kako je glasao."
+      }
+
+    ]
+  },
+
+
+  {
+    segment: 2,
+    segmentName: "NAUČI STUDENTA - IZBORNI DAN",
+    level: 5,
+    text: "Nivo 5: Glasanje i birački postupak",
+
+    questions: [
+
+      {
+        q: "Na izborima za narodne poslanike birač označava:",
+        options: [
+          "Ime jednog kandidata",
+          "Redni broj ispred naziva izborne liste",
+          "Broj biračkog mesta",
+          "Svoj matični broj"
+        ],
+        correct:
+          "Redni broj ispred naziva izborne liste",
+        explanation:
+          "Za izbore za narodne poslanike glasanje se vrši zaokruživanjem rednog broja ispred naziva izborne liste."
+      },
+
+      {
+        q: "Gde birač uobičajeno glasa?",
+        options: [
+          "Na bilo kom mestu u gradu",
+          "Na biračkom mestu na kojem je upisan u birački spisak",
+          "U policijskoj stanici",
+          "U opštinskoj sali bez obzira na upis"
+        ],
+        correct:
+          "Na biračkom mestu na kojem je upisan u birački spisak",
+        explanation:
+          "Birač glasa na biračkom mestu na kojem je upisan u izvod iz biračkog spiska, uz zakonom predviđene izuzetke."
+      },
+
+      {
+        q: "Šta birački odbor ne sme da radi?",
+        options: [
+          "Sprovodi glasanje",
+          "Obezbeđuje tajnost",
+          "Utiče na izbor birača",
+          "Utvrđuje rezultate na biračkom mestu"
+        ],
+        correct:
+          "Utiče na izbor birača",
+        explanation:
+          "Birač slobodno donosi odluku, a birački odbor sprovodi postupak i ne sme da utiče na njegov izbor."
+      },
+
+      {
+        q: "Čemu služi birački spisak?",
+        options: [
+          "Za proveru i evidentiranje birača",
+          "Za objavljivanje za koga je neko glasao",
+          "Za određivanje rezultata unapred",
+          "Za izbor kandidata"
+        ],
+        correct:
+          "Za proveru i evidentiranje birača",
+        explanation:
+          "Birački spisak služi za proveru identiteta/upisa i evidentiranje ostvarivanja biračkog prava."
+      },
+
+      {
+        q: "Da li birač treba drugima da pokaže za koga je glasao?",
+        options: [
+          "Da, obavezno",
+          "Da, članovima porodice",
+          "Ne",
+          "Samo kandidatima"
+        ],
+        correct: "Ne",
+        explanation:
+          "Glasanje je tajno. Birač nije dužan da drugima pokazuje kako je glasao."
+      }
+
+    ]
+  },
+
+
+  {
+    segment: 2,
+    segmentName: "NAUČI STUDENTA - IZBORNI DAN",
+    level: 6,
+    text: "Nivo 6: Sloboda i tajnost glasanja",
+
+    questions: [
+
+      {
+        q: "Da li je dozvoljeno glasati umesto drugog birača?",
+        options: [
+          "Da",
+          "Samo uz njegovu dozvolu",
+          "Ne",
+          "Ako se birački odbor složi"
+        ],
+        correct: "Ne",
+        explanation:
+          "Svaki birač glasa lično. Glasanje umesto drugog predstavlja zloupotrebu prava glasanja."
+      },
+
+      {
+        q: "Da li birač može na istom glasanju da glasa više od jedanput?",
+        options: [
+          "Da",
+          "Samo dva puta",
+          "Ne",
+          "Ako drugi put promeni mišljenje"
+        ],
+        correct: "Ne",
+        explanation:
+          "Birač u toku održavanja izbora može glasati samo jedanput."
+      },
+
+      {
+        q: "Da li je dozvoljena kupovina glasova?",
+        options: [
+          "Da",
+          "Samo za male iznose",
+          "Samo pred zatvaranje",
+          "Ne"
+        ],
+        correct: "Ne",
+        explanation:
+          "Nuđenje, davanje ili obećavanje koristi radi uticanja na glasanje može predstavljati krivično delo iz člana 156 KZ Srbije."
+      },
+
+      {
+        q: "Da li je dozvoljeno silom ili pretnjom naterati nekoga kako da glasa?",
+        options: [
+          "Da",
+          "Samo ako je kandidat poznat",
+          "Ne",
+          "Samo uz svedoka"
+        ],
+        correct: "Ne",
+        explanation:
+          "Član 155 stav 2 KZ Srbije propisuje krivičnu odgovornost za prinudu silom ili pretnjom u vezi sa ostvarivanjem prava glasanja."
+      },
+
+      {
+        q: "Da li povreda tajnosti glasanja može biti krivično delo?",
+        options: [
+          "Da",
+          "Ne",
+          "Samo ako je listić pocepan",
+          "Samo ako se glasa van Srbije"
+        ],
+        correct: "Da",
+        explanation:
+          "Član 160 KZ Srbije uređuje povredu tajnosti glasanja."
+      }
+
+    ]
+  },
+
+
+  /* =========================
+     SEGMENT 3
+     ========================= */
+
+  {
+    segment: 3,
+    segmentName: "STUDENT UČI ĆACIJA - KRAĐA KOŠTA",
+    level: 7,
+    text: "Nivo 7: Krivična dela protiv izbornih prava",
+
+    questions: [
+
+      {
+        q: "Član 155 stav 2 KZ Srbije: prinuda silom ili pretnjom da neko glasa na određeni način nosi kaznu:",
+        options: [
+          "Novčanu kaznu בלבד",
+          "3 meseca do 3 godine zatvora",
+          "3 do 5 godina zatvora",
+          "5 do 10 godina zatvora"
+        ],
+        correct: "3 meseca do 3 godine zatvora",
+        explanation:
+          "Član 155 stav 2 propisuje zatvor od tri meseca do tri godine za prinudu silom ili pretnjom u vezi sa glasanjem."
+      },
+
+      {
+        q: "Član 156 stav 1 KZ Srbije odnosi se na:",
+        options: [
+          "Nuđenje, davanje ili obećavanje koristi radi uticanja na glasanje",
+          "Uništavanje glasačkog listića",
+          "Netačan birački spisak",
+          "Narušavanje reda"
+        ],
+        correct:
+          "Nuđenje, davanje ili obećavanje koristi radi uticanja na glasanje",
+        explanation:
+          "Za nuđenje, davanje ili obećavanje nagrade, poklona ili druge koristi radi uticanja na glasanje zaprećena je novčana kazna ili zatvor do tri godine."
+      },
+
+      {
+        q: "Član 156 stav 2 KZ Srbije obuhvata:",
+        options: [
+          "Traženje ili primanje koristi radi uticanja na glasanje",
+          "Samo pogrešno zaokruživanje",
+          "Samo kašnjenje na biračko mesto",
+          "Uništavanje biračkog spiska"
+        ],
+        correct:
+          "Traženje ili primanje koristi radi uticanja na glasanje",
+        explanation:
+          "I traženje ili primanje poklona ili druge koristi radi uticanja na glasanje potpada pod član 156."
+      },
+
+      {
+        q: "Ako delo iz člana 156 stav 1 učini član biračkog odbora ili drugo lice u vršenju dužnosti u vezi sa glasanjem, kazna je:",
+        options: [
+          "Do 6 meseci",
+          "Do 1 godine",
+          "3 meseca do 5 godina",
+          "Do 10 godina"
+        ],
+        correct: "3 meseca do 5 godina",
+        explanation:
+          "Član 156 stav 3 propisuje zatvor od tri meseca do pet godina za lice koje delo učini u vršenju izborne dužnosti."
+      },
+
+      {
+        q: "Šta se dešava sa poklonom ili drugom koristi iz člana 156?",
+        options: [
+          "Vraća se biraču",
+          "Oduzima se",
+          "Pretvara se u glas",
+          "Ne preduzima se ništa"
+        ],
+        correct: "Oduzima se",
+        explanation:
+          "Član 156 stav 4 propisuje da se poklon ili druga korist oduzima."
+      }
+
+    ]
+  },
+
+
+  {
+    segment: 3,
+    segmentName: "STUDENT UČI ĆACIJA - KRAĐA KOŠTA",
+    level: 8,
+    text: "Nivo 8: Zloupotreba, tajnost i ometanje glasanja",
+
+    questions: [
+
+      {
+        q: "Član 157 stav 1 KZ Srbije: glasanje umesto drugog ili glasanje više od jedanput kažnjava se:",
+        options: [
+          "Novčanom kaznom ili zatvorom do 1 godine",
+          "Zatvorom do 3 godine",
+          "Zatvorom od 3 do 5 godina",
+          "Samo upozorenjem"
+        ],
+        correct:
+          "Novčanom kaznom ili zatvorom do 1 godine",
+        explanation:
+          "Član 157 stav 1 obuhvata glasanje umesto drugog, višestruko glasanje ili korišćenje više od jednog glasačkog listića."
+      },
+
+      {
+        q: "Član 157 stav 2 KZ Srbije: član biračkog odbora koji omogući takvu zloupotrebu kažnjava se:",
+        options: [
+          "Do 6 meseci",
+          "Novčanom kaznom ili zatvorom do 2 godine",
+          "3 do 5 godina",
+          "Do 10 godina"
+        ],
+        correct:
+          "Novčanom kaznom ili zatvorom do 2 godine",
+        explanation:
+          "Član biračkog odbora koji drugome omogući delo iz stava 1 može biti kažnjen novčanom kaznom ili zatvorom do dve godine."
+      },
+
+      {
+        q: "Član 159 stav 1 KZ Srbije odnosi se na:",
+        options: [
+          "Sprečavanje održavanja glasanja silom, pretnjom ili drugim protivpravnim načinom",
+          "Tajnost glasanja",
+          "Kupovinu glasova",
+          "Falsifikovanje biračkog spiska"
+        ],
+        correct:
+          "Sprečavanje održavanja glasanja silom, pretnjom ili drugim protivpravnim načinom",
+        explanation:
+          "Član 159 stav 1 propisuje zatvor do tri godine za sprečavanje održavanja glasanja na biračkom mestu."
+      },
+
+      {
+        q: "Član 160 stav 1 KZ Srbije odnosi se na:",
+        options: [
+          "Povredu tajnosti glasanja",
+          "Uništavanje glasačkih listića",
+          "Višestruko glasanje",
+          "Netačne biračke spiskove"
+        ],
+        correct: "Povredu tajnosti glasanja",
+        explanation:
+          "Povreda tajnosti glasanja uređena je članom 160 KZ Srbije."
+      },
+
+      {
+        q: "Za povredu tajnosti glasanja iz člana 160 stav 1 zaprećena je:",
+        options: [
+          "Novčana kazna ili zatvor do 6 meseci",
+          "Zatvor do 2 godine",
+          "Zatvor od 3 do 5 godina",
+          "Zatvor do 10 godina"
+        ],
+        correct:
+          "Novčana kazna ili zatvor do 6 meseci",
+        explanation:
+          "Član 160 stav 1 predviđa novčanu kaznu ili zatvor do šest meseci."
+      }
+
+    ]
+  },
+
+
+  {
+    segment: 3,
+    segmentName: "STUDENT UČI ĆACIJA - KRAĐA KOŠTA",
+    level: 9,
+    text: "Nivo 9: Rezultati i izborna dokumentacija",
+
+    questions: [
+
+      {
+        q: "Član 161 KZ Srbije odnosi se na:",
+        options: [
+          "Falsifikovanje rezultata glasanja",
+          "Kupovinu glasova",
+          "Povredu tajnosti",
+          "Glasanje umesto drugog"
+        ],
+        correct: "Falsifikovanje rezultata glasanja",
+        explanation:
+          "Član 161 obuhvata menjanje broja glasačkih listića ili glasova i objavljivanje neistinitog rezultata glasanja."
+      },
+
+      {
+        q: "Za delo iz člana 161 KZ Srbije zaprećena je kazna:",
+        options: [
+          "Do 1 godine",
+          "Do 2 godine",
+          "6 meseci do 5 godina",
+          "5 do 10 godina"
+        ],
+        correct: "6 meseci do 5 godina",
+        explanation:
+          "Član 161 propisuje zatvor od šest meseci do pet godina."
+      },
+
+      {
+        q: "Član 162 stav 1 KZ Srbije odnosi se na:",
+        options: [
+          "Uništavanje, oštećivanje, oduzimanje ili prikrivanje glasačkog listića ili drugog dokumenta o glasanju",
+          "Kupovinu glasova",
+          "Prinudu birača",
+          "Povredu tajnosti"
+        ],
+        correct:
+          "Uništavanje, oštećivanje, oduzimanje ili prikrivanje glasačkog listića ili drugog dokumenta o glasanju",
+        explanation:
+          "Ovo krivično delo uređeno je članom 162, a ne članom 160."
+      },
+
+      {
+        q: "Ako delo iz člana 162 stav 1 učini član biračkog odbora ili drugo lice u vršenju izborne dužnosti, kazna je:",
+        options: [
+          "Do 1 godine",
+          "3 meseca do 3 godine",
+          "3 do 5 godina",
+          "Do 10 godina"
+        ],
+        correct: "3 meseca do 3 godine",
+        explanation:
+          "Član 162 stav 2 propisuje zatvor od tri meseca do tri godine za člana biračkog odbora ili drugo lice koje delo učini u vršenju dužnosti."
+      },
+
+      {
+        q: "Član 158 KZ Srbije odnosi se na:",
+        options: [
+          "Sastavljanje netačnih biračkih spiskova sa namerom uticanja na rezultat",
+          "Kupovinu sendviča",
+          "Kašnjenje birača",
+          "Nevažeći glas zbog pogrešnog zaokruživanja"
+        ],
+        correct:
+          "Sastavljanje netačnih biračkih spiskova sa namerom uticanja na rezultat",
+        explanation:
+          "Član 158 uređuje sastavljanje netačnih biračkih spiskova sa namerom uticanja na rezultate izbora ili referenduma."
+      }
+
+    ]
+  }
+
+];
+
+
+/* =========================================================
+   CANVAS
+   ========================================================= */
+
+const canvas =
+  document.getElementById('gameCanvas');
+
+const ctx = canvas.getContext('2d');
+
+const canvasContainer =
+  document.getElementById('canvas-container');
+
+
+/* =========================================================
+   GAME STATE
+   ========================================================= */
+
+let currentLevelIdx = 0;
+
+let hits = 0;
+let bites = 0;
+let misses = 0;
+
+let gameState = 'START';
+
+let stateTimer = null;
+
+let quizQuestionIndex = 0;
+let quizAnswered = false;
+
+let zombieXFactor = 0.65;
+let zombieDir = 1;
+
+let weaponAnim = {
+  active: false,
+  progress: 0
+};
+
+let zombieImpactAnim = 0;
+
+let popTexts = [];
+
+let victoryParticles = [];
+
+
+/* =========================================================
+   UI
+   ========================================================= */
+
+const hudSegment =
+  document.getElementById('hud-segment');
+
+const hudLevel =
+  document.getElementById('hud-level');
+
+const hudWeapon =
+  document.getElementById('hud-weapon');
+
+const hudHits =
+  document.getElementById('hud-hits');
+
+const hudMisses =
+  document.getElementById('hud-misses');
+
+const brainFill =
+  document.getElementById('brain-fill');
+
+const questionText =
+  document.getElementById('question-text');
+
+const strikePrompt =
+  document.getElementById('strike-prompt');
+
+const tapHintText =
+  document.getElementById('tap-hint-text');
+
+const quizContainer =
+  document.getElementById('quiz-options-container');
+
+const quizFeedback =
+  document.getElementById('quiz-feedback');
+
+const quizFeedbackTitle =
+  document.getElementById('quiz-feedback-title');
+
+const quizFeedbackText =
+  document.getElementById('quiz-feedback-text');
+
+const quizNext =
+  document.getElementById('quiz-next');
+
+const modalStart =
+  document.getElementById('modal-start');
+
+const modalBriefing =
+  document.getElementById('modal-briefing');
+
+const modalIntermission =
+  document.getElementById('modal-intermission');
+
+const modalGameOver =
+  document.getElementById('modal-gameover');
+
+const modalVictory =
+  document.getElementById('modal-victory');
+
+
+/* =========================================================
+   CANVAS RESIZE
+   ========================================================= */
+
+function resizeCanvas() {
+
+  if (canvasContainer) {
+
+    canvas.width =
+      canvasContainer.clientWidth;
+
+    canvas.height =
+      canvasContainer.clientHeight;
+
+  }
+
+}
+
+
+/* =========================================================
+   START / RESET
+   ========================================================= */
+
+function resetGameToBriefing() {
+
+  if (stateTimer) {
+    clearTimeout(stateTimer);
+    stateTimer = null;
+  }
+
+  currentLevelIdx = 0;
+
+  hits = 0;
+  bites = 0;
+  misses = 0;
+
+  quizQuestionIndex = 0;
+  quizAnswered = false;
+
+  gameState = 'BRIEFING';
+
+  zombieXFactor = 0.65;
+  zombieDir = 1;
+
+  weaponAnim.active = false;
+  weaponAnim.progress = 0;
+
+  zombieImpactAnim = 0;
+
+  popTexts = [];
+  victoryParticles = [];
+
+  modalStart.classList.add('hidden');
+  modalIntermission.classList.add('hidden');
+  modalGameOver.classList.add('hidden');
+  modalVictory.classList.add('hidden');
+
+  quizContainer.classList.add('hidden');
+  quizFeedback.style.display = 'none';
+
+  strikePrompt.style.display = 'none';
+  tapHintText.style.display = 'none';
+
+  modalBriefing.classList.remove('hidden');
+
+  updateHUD();
+
+}
+
+
+document.getElementById('btn-start')
+  .addEventListener('click', () => {
+
+    AudioEngine.init();
+
+    resetGameToBriefing();
+
+  });
+
+
+document.getElementById('btn-briefing-start')
+  .addEventListener('click', () => {
+
+    AudioEngine.init();
+
+    modalBriefing.classList.add('hidden');
+
+    startLevel(0);
+
+  });
+
+
+document.getElementById('btn-next-level')
+  .addEventListener('click', () => {
+
+    modalIntermission.classList.add('hidden');
+
+    startLevel(currentLevelIdx + 1);
+
+  });
+
+
+document.getElementById('btn-restart')
+  .addEventListener('click', () => {
+
+    AudioEngine.init();
+
+    modalGameOver.classList.add('hidden');
+
+    resetGameToBriefing();
+
+  });
+
+
+document.getElementById('btn-play-again')
+  .addEventListener('click', () => {
+
+    AudioEngine.init();
+
+    modalVictory.classList.add('hidden');
+
+    resetGameToBriefing();
+
+  });
+
+
+/* =========================================================
+   DIRECT TAP / CLICK
+   ========================================================= */
+
+canvasContainer.addEventListener('click', (e) => {
+
+  if (e.target.classList.contains('quiz-btn')) {
+    return;
+  }
+
+  if (e.target === quizNext) {
+    return;
+  }
+
+  handleSegment1Strike();
+
+});
+
+
+window.addEventListener('keydown', (e) => {
+
+  if (e.code === 'Space') {
+
+    e.preventDefault();
+
+    handleSegment1Strike();
+
+  }
+
+});
+
+
+window.addEventListener('resize', resizeCanvas);
+
+
+/* =========================================================
+   START LEVEL
+   ========================================================= */
+
+function startLevel(idx) {
+
+  if (stateTimer) {
+    clearTimeout(stateTimer);
+    stateTimer = null;
+  }
+
+  if (idx < 0 || idx >= GAME_LEVELS.length) {
+    showVictory();
+    return;
+  }
+
+  currentLevelIdx = idx;
+
+  hits = 0;
+  bites = 0;
+  misses = 0;
+
+  quizQuestionIndex = 0;
+  quizAnswered = false;
+
+  popTexts = [];
+
+  weaponAnim.active = false;
+  weaponAnim.progress = 0;
+
+  gameState = 'IDLE';
+
+  const cfg =
+    GAME_LEVELS[currentLevelIdx];
+
+  quizFeedback.style.display = 'none';
+
+  if (cfg.segment === 1) {
+
+    quizContainer.classList.add('hidden');
+    quizContainer.style.display = '';
+
+    tapHintText.style.display = 'block';
+
+    enterIdleState();
+
+  } else {
+
+    strikePrompt.style.display = 'none';
+
+    tapHintText.style.display = 'none';
+
+    quizContainer.classList.remove('hidden');
+    quizContainer.style.display = 'grid';
+
+    renderQuizQuestion(cfg);
+
+  }
+
+  updateHUD();
+
+}
+
+
+/* =========================================================
+   HUD
+   ========================================================= */
+
+function updateHUD() {
+
+  const cfg =
+    GAME_LEVELS[currentLevelIdx];
+
+  hudSegment.innerText =
+    `${cfg.segment} / 3`;
+
+  hudLevel.innerText =
+    `${cfg.level} / 9`;
+
+
+  if (cfg.segment === 1) {
+
+    hudWeapon.innerText =
+      `📚 ${cfg.weapon}`;
+
+    questionText.innerText =
+      cfg.text;
+
+    hudHits.innerText =
+      `${hits} / 3`;
+
+    hudMisses.innerText =
+      `${bites} / 3 uvo`;
+
+  } else {
+
+    hudWeapon.innerText =
+      cfg.segment === 2
+        ? `✏️ Birački Kviz`
+        : `⚖️ Pravni KZ Srbije`;
+
+    const total =
+      cfg.questions.length;
+
+    const current =
+      Math.min(
+        quizQuestionIndex + 1,
+        total
+      );
+
+    questionText.innerText =
+      `Pitanje ${current}/${total}: ${cfg.questions[quizQuestionIndex].q}`;
+
+    hudHits.innerText =
+      `${current - (quizAnswered ? 0 : 1)} / ${total}`;
+
+    if (hudHits.innerText.startsWith('-')) {
+      hudHits.innerText = '0 / ' + total;
+    }
+
+    hudMisses.innerText =
+      `${misses} / 3`;
+
+  }
+
+
+  /* 9 akcijskih poena + 30 quiz odgovora = 39 */
+
+  let progress = 0;
+
+  for (let i = 0; i < currentLevelIdx; i++) {
+
+    const level =
+      GAME_LEVELS[i];
+
+    if (level.segment === 1) {
+
+      progress += 3;
+
+    } else {
+
+      progress += level.questions.length;
+
+    }
+
+  }
+
+
+  if (cfg.segment === 1) {
+
+    progress += hits;
+
+  } else {
+
+    progress += quizQuestionIndex;
+
+    if (quizAnswered) {
+      progress++;
+    }
+
+  }
+
+
+  const maxPossiblePoints = 39;
+
+  const brainPercentage =
+    Math.min(
+      100,
+      Math.round(
+        (progress / maxPossiblePoints) * 100
+      )
+    );
+
+  brainFill.style.width =
+    `${brainPercentage}%`;
+
+}
+
+
+/* =========================================================
+   SEGMENT 1
+   ========================================================= */
+
+function enterIdleState() {
+
+  if (
+    ['GAMEOVER', 'VICTORY', 'INTERMISSION']
+      .includes(gameState)
+  ) {
+    return;
+  }
+
+  gameState = 'IDLE';
+
+  strikePrompt.style.display = 'none';
+
+  if (stateTimer) {
+    clearTimeout(stateTimer);
+  }
+
+  const cfg =
+    GAME_LEVELS[currentLevelIdx];
+
+  const delay =
+    cfg.idleTime +
+    Math.random() * 400;
+
+  stateTimer =
+    setTimeout(() => {
+
+      enterVulnerableState();
+
+    }, delay);
+
+}
+
+
+function enterVulnerableState() {
+
+  if (gameState !== 'IDLE') {
+    return;
+  }
+
+  gameState = 'VULNERABLE';
+
+  strikePrompt.innerText =
+    '⚡ TRESNI GA SADA! ⚡';
+
+  strikePrompt.style.display =
+    'block';
+
+  if (stateTimer) {
+    clearTimeout(stateTimer);
+  }
+
+  const cfg =
+    GAME_LEVELS[currentLevelIdx];
+
+  stateTimer =
+    setTimeout(() => {
+
+      if (gameState === 'VULNERABLE') {
+        executeBite();
+      }
+
+    }, cfg.attackWindow);
+
+}
+
+
+function executeBite() {
+
+  if (stateTimer) {
+    clearTimeout(stateTimer);
+  }
+
+  gameState = 'ATTACKING';
+
+  strikePrompt.style.display =
+    'none';
+
+  bites++;
+
+  updateHUD();
+
+  AudioEngine.playBite();
+
+  popTexts.push({
+    text: 'NJAM! 🥪',
+    x: canvas.width * 0.22,
+    y: canvas.height * 0.5,
+    life: 1,
+    scale: 1.2
+  });
+
+  stateTimer =
+    setTimeout(() => {
+
+      if (bites >= 3) {
+
+        triggerGameOver(
+          "Ćaci ti je pojeo ceo sendvič!"
+        );
+
+      } else {
+
+        enterIdleState();
+
+      }
+
+    }, 700);
+
+}
+
+
+function handleSegment1Strike() {
+
+  AudioEngine.init();
+
+  const cfg =
+    GAME_LEVELS[currentLevelIdx];
+
+  if (
+    cfg.segment !== 1 ||
+    [
+      'GAMEOVER',
+      'VICTORY',
+      'INTERMISSION',
+      'START',
+      'BRIEFING'
+    ].includes(gameState)
+  ) {
+    return;
+  }
+
+  const width =
+    canvas.width || 800;
+
+  const height =
+    canvas.height || 400;
+
+  const currentZombieX =
+    width * zombieXFactor;
+
+
+  if (gameState === 'VULNERABLE') {
+
+    if (stateTimer) {
+      clearTimeout(stateTimer);
+    }
+
+    strikePrompt.style.display =
+      'none';
+
+    gameState = 'HIT_SUCCESS';
+
+    hits++;
+
+    updateHUD();
+
+    AudioEngine.playHit();
+
+    weaponAnim = {
+      active: true,
+      progress: 0
+    };
+
+    zombieImpactAnim = 16;
+
+    popTexts.push({
+      text: 'PLJAS!',
+      x: currentZombieX,
+      y: height * 0.3,
+      life: 1,
+      scale: 1.2
+    });
+
+    stateTimer =
+      setTimeout(() => {
+
+        if (hits >= 3) {
+
+          triggerLevelComplete();
+
+        } else {
+
+          enterIdleState();
+
+        }
+
+      }, 600);
+
+  }
+
+  else if (gameState === 'IDLE') {
+
+    weaponAnim = {
+      active: true,
+      progress: 0
+    };
+
+    misses++;
+
+    updateHUD();
+
+    AudioEngine.playHit();
+
+    popTexts.push({
+      text: 'PROMAŠAJ!',
+      x: currentZombieX,
+      y: height * 0.35,
+      life: 1,
+      scale: 0.9
+    });
+
+    if (misses >= 3) {
+
+      triggerGameOver(
+        "Napravio si 3 promašaja!"
+      );
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   QUIZ
+   ========================================================= */
+
+function renderQuizQuestion(cfg) {
+
+  quizAnswered = false;
+
+  quizFeedback.style.display =
+    'none';
+
+  quizContainer.classList.remove('hidden');
+
+  quizContainer.style.display =
+    'grid';
+
+  quizContainer.innerHTML = '';
+
+  const q =
+    cfg.questions[quizQuestionIndex];
+
+  if (!q || !Array.isArray(q.options) || q.options.length !== 4) {
+
+    console.error(
+      "Neispravno pitanje:",
+      q
+    );
+
+    return;
+  }
+
+  questionText.innerText =
+    `Pitanje ${quizQuestionIndex + 1}/${cfg.questions.length}: ${q.q}`;
+
+
+  q.options.forEach((opt) => {
+
+    const btn =
+      document.createElement('button');
+
+    btn.className =
+      'quiz-btn';
+
+    btn.innerText =
+      opt;
+
+    btn.addEventListener(
+      'click',
+      () => {
+
+        handleQuizAnswer(
+          opt,
+          q
+        );
+
+      }
+    );
+
+    quizContainer.appendChild(btn);
+
+  });
+
+  updateHUD();
+
+}
+
+
+function handleQuizAnswer(selected, question) {
+
+  AudioEngine.init();
+
+  if (
+    quizAnswered ||
+    ['GAMEOVER', 'VICTORY', 'INTERMISSION']
+      .includes(gameState)
+  ) {
+    return;
+  }
+
+  quizAnswered = true;
+
+  const buttons =
+    Array.from(
+      quizContainer.querySelectorAll('.quiz-btn')
+    );
+
+  buttons.forEach((btn) => {
+
+    btn.disabled = true;
+
+    if (btn.innerText === question.correct) {
+      btn.classList.add('correct');
+    }
+
+  });
+
+
+  const selectedButton =
+    buttons.find(
+      btn => btn.innerText === selected
+    );
+
+
+  if (selected === question.correct) {
+
+    hits = 1;
+
+    if (selectedButton) {
+      selectedButton.classList.add('correct');
+    }
+
+    AudioEngine.playHit();
+
+    weaponAnim = {
+      active: true,
+      progress: 0
+    };
+
+    zombieImpactAnim = 14;
+
+    popTexts.push({
+      text: 'TAČNO! 🎓',
+      x: canvas.width * zombieXFactor,
+      y: canvas.height * 0.3,
+      life: 1,
+      scale: 1.3
+    });
+
+    quizFeedbackTitle.innerText =
+      'TAČAN ODGOVOR! ✅';
+
+    quizFeedbackTitle.style.color =
+      '#4ade80';
+
+  } else {
+
+    misses++;
+
+    if (selectedButton) {
+      selectedButton.classList.add('wrong');
+    }
+
+    AudioEngine.playBite();
+
+    popTexts.push({
+      text: 'NETAČNO! ❌',
+      x: canvas.width * zombieXFactor,
+      y: canvas.height * 0.35,
+      life: 1,
+      scale: 1.0
+    });
+
+    quizFeedbackTitle.innerText =
+      'NETAČAN ODGOVOR ❌';
+
+    quizFeedbackTitle.style.color =
+      '#f87171';
+
+  }
+
+
+  quizFeedbackText.innerHTML =
+    `<b>Tačan odgovor:</b> ${question.correct}<br><br>${question.explanation}`;
+
+  quizFeedback.style.display =
+    'block';
+
+  updateHUD();
+
+}
+
+
+quizNext.addEventListener('click', () => {
+
+  if (!quizAnswered) {
+    return;
+  }
+
+  const cfg =
+    GAME_LEVELS[currentLevelIdx];
+
+  const totalQuestions =
+    cfg.questions.length;
+
+
+  /*
+     Ako je igrač napravio 3 greške,
+     nivo se prekida nakon objašnjenja.
+  */
+
+  if (misses >= 3) {
+
+    quizFeedback.style.display =
+      'none';
+
+    quizContainer.classList.add('hidden');
+
+    triggerGameOver(
+      "Napravio si 3 netačna odgovora u ovom kvizu!"
+    );
+
+    return;
+  }
+
+
+  if (
+    quizQuestionIndex <
+    totalQuestions - 1
+  ) {
+
+    quizQuestionIndex++;
+
+    quizAnswered = false;
+
+    quizFeedback.style.display =
+      'none';
+
+    renderQuizQuestion(cfg);
+
+    return;
+
+  }
+
+
+  /*
+     Završeno 5/5.
+     Ako je nivo 9 -> DIREKTNA POBEDA.
+  */
+
+  quizFeedback.style.display =
+    'none';
+
+  quizContainer.classList.add('hidden');
+
+  quizContainer.style.display =
+    '';
+
+  if (
+    currentLevelIdx ===
+    GAME_LEVELS.length - 1
+  ) {
+
+    showVictory();
+
+    return;
+
+  }
+
+
+  triggerLevelComplete();
+
+});
+
+
+/* =========================================================
+   LEVEL COMPLETE / INTERMISSION
+   ========================================================= */
+
+function triggerLevelComplete() {
+
+  if (stateTimer) {
+    clearTimeout(stateTimer);
+  }
+
+  gameState =
+    'INTERMISSION';
+
+  quizFeedback.style.display =
+    'none';
+
+  quizContainer.classList.add('hidden');
+
+  quizContainer.style.display =
+    '';
+
+  const cfg =
+    GAME_LEVELS[currentLevelIdx];
+
+  const titleElem =
+    document.getElementById(
+      'intermission-title'
+    );
+
+  const descElem =
+    document.getElementById(
+      'intermission-desc'
+    );
+
+
+  if (cfg.level === 3) {
+
+    titleElem.innerText =
+      'SEGMENT 1 ZAVRŠEN! 🎓';
+
+    descElem.innerHTML =
+      'Ćaci se osvestio i postao <b>Ugledni Student</b>!<br><br>' +
+      'Prelazimo na <b>SEGMENT 2: IZBORNI DAN</b>.<br>' +
+      'Sada te čeka 5 pitanja po nivou.';
+
+  }
+
+  else if (cfg.level === 6) {
+
+    titleElem.innerText =
+      'SEGMENT 2 ZAVRŠEN! 📜';
+
+    descElem.innerHTML =
+      'Student Ćaci je savladao osnovna pravila izbornog dana!<br><br>' +
+      'Prelazimo na <b>SEGMENT 3: KRIVIČNA DELA PROTIV IZBORNIH PRAVA</b>.<br>' +
+      'Sada sledi pravni deo igre.';
+
+  }
+
+  else {
+
+    titleElem.innerText =
+      `NIVO ${cfg.level} PREĐEN! 👏`;
+
+    descElem.innerText =
+      `Bravo! Uspešno si završio nivo ${cfg.level}. Nastavi dalje!`;
+
+  }
+
+
+  modalIntermission.classList.remove(
+    'hidden'
+  );
+
+}
+
+
+/* =========================================================
+   GAME OVER
+   ========================================================= */
+
+function triggerGameOver(reason) {
+
+  if (stateTimer) {
+    clearTimeout(stateTimer);
+  }
+
+  gameState =
+    'GAMEOVER';
+
+  strikePrompt.style.display =
+    'none';
+
+  quizFeedback.style.display =
+    'none';
+
+  quizContainer.classList.add('hidden');
+
+  document.getElementById(
+    'gameover-desc'
+  ).innerText =
+    reason;
+
+  modalGameOver.classList.remove(
+    'hidden'
+  );
+
+}
+
+
+/* =========================================================
+   VICTORY
+   ========================================================= */
+
+function showVictory() {
+
+  if (stateTimer) {
+    clearTimeout(stateTimer);
+  }
+
+  gameState =
+    'VICTORY';
+
+  strikePrompt.style.display =
+    'none';
+
+  tapHintText.style.display =
+    'none';
+
+  quizContainer.classList.add('hidden');
+
+  quizFeedback.style.display =
+    'none';
+
+  AudioEngine.playVictory();
+
+  initVictoryParticles();
+
+  modalVictory.classList.remove(
+    'hidden'
+  );
+
+}
+
+
+/* =========================================================
+   VICTORY PARTICLES
+   ========================================================= */
+
+function initVictoryParticles() {
+
+  const width =
+    canvas.width || 800;
+
+  const height =
+    canvas.height || 400;
+
+  victoryParticles = [];
+
+  for (let i = 0; i < 75; i++) {
+
+    victoryParticles.push({
+
+      x: width * 0.5,
+
+      y: height * 0.4,
+
+      vx:
+        (Math.random() - 0.5) * 16,
+
+      vy:
+        (Math.random() - 0.5) * 16,
+
+      color:
+        [
+          '#facc15',
+          '#38bdf8',
+          '#4ade80',
+          '#f43f5e',
+          '#a855f7'
+        ][
+          Math.floor(
+            Math.random() * 5
+          )
+        ],
+
+      size:
+        Math.random() * 8 + 4,
+
+      life: 1
+
+    });
+
+  }
+
+}
+
+
+/* =========================================================
+   DRAW SCENE
+   ========================================================= */
+
+function drawScene() {
+
+  ctx.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  const width =
+    canvas.width || 800;
+
+  const height =
+    canvas.height || 400;
+
+  const cfg =
+    GAME_LEVELS[currentLevelIdx];
+
+
+  if (
+    cfg.segment === 1 &&
+    ['IDLE', 'VULNERABLE']
+      .includes(gameState)
+  ) {
+
+    const speed =
+      cfg.speed * 0.0016;
+
+    zombieXFactor +=
+      speed * zombieDir;
+
+    if (zombieXFactor > 0.82) {
+
+      zombieXFactor = 0.82;
+      zombieDir = -1;
+
+    }
+
+    else if (zombieXFactor < 0.42) {
+
+      zombieXFactor = 0.42;
+      zombieDir = 1;
+
+    }
+
+  }
+
+
+  /* Ground */
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    0,
+    height * 0.75
+  );
+
+  ctx.lineTo(
+    width,
+    height * 0.75
+  );
+
+  ctx.strokeStyle =
+    '#334155';
+
+  ctx.lineWidth =
+    4;
+
+  ctx.stroke();
+
+
+  const itemX =
+    width * 0.22;
+
+  const itemY =
+    height * 0.65;
+
+  const zombieX =
+    width * zombieXFactor;
+
+  const zombieY =
+    height * 0.55;
+
+
+  if (cfg.segment === 1) {
+
+    drawSandwichWithBites(
+      itemX,
+      itemY,
+      bites
+    );
+
+  } else {
+
+    drawBallotBox(
+      itemX,
+      itemY
+    );
+
+  }
+
+
+  if (gameState === 'VICTORY') {
+
+    drawGraduateStudentCaci(
+      width * 0.5,
+      height * 0.46
+    );
+
+    drawVictoryParticles();
+
+  }
+
+  else if (cfg.segment === 1) {
+
+    drawZombieCaci(
+      zombieX,
+      zombieY
+    );
+
+  }
+
+  else if (cfg.segment === 2) {
+
+    drawStudentCaciLearning(
+      zombieX,
+      zombieY
+    );
+
+  }
+
+  else {
+
+    drawStudentCaciTeaching(
+      zombieX,
+      zombieY
+    );
+
+  }
+
+
+  if (weaponAnim.active) {
+
+    drawWeaponAnimation(
+      zombieX,
+      zombieY - 40,
+      cfg.segment
+    );
+
+  }
+
+
+  drawPopTexts();
+
+  requestAnimationFrame(
+    drawScene
+  );
+
+}
+
+
+/* =========================================================
+   SANDWICH
+   ========================================================= */
+
+function drawSandwichWithBites(x, y, bites) {
+
+  ctx.save();
+
+  ctx.translate(x, y);
+
+  ctx.fillStyle =
+    'rgba(0,0,0,0.3)';
+
+  ctx.beginPath();
+
+  ctx.ellipse(
+    0,
+    20,
+    45,
+    8,
+    0,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  if (bites >= 3) {
+
+    ctx.fillStyle =
+      '#d97706';
+
+    ctx.beginPath();
+    ctx.arc(
+      -15,
+      10,
+      4,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(
+      10,
+      12,
+      3,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(
+      0,
+      8,
+      5,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+
+    ctx.restore();
+
+    return;
+  }
+
+
+  ctx.fillStyle =
+    '#d97706';
+
+  ctx.beginPath();
+
+  ctx.roundRect(
+    -42,
+    10,
+    84,
+    16,
+    6
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#22c55e';
+
+  ctx.fillRect(
+    -38,
+    4,
+    76,
+    6
+  );
+
+  ctx.fillStyle =
+    '#facc15';
+
+  ctx.fillRect(
+    -36,
+    -1,
+    72,
+    6
+  );
+
+  ctx.fillStyle =
+    '#f43f5e';
+
+  ctx.fillRect(
+    -38,
+    -7,
+    76,
+    6
+  );
+
+
+  ctx.fillStyle =
+    '#f59e0b';
+
+  ctx.beginPath();
+
+  ctx.roundRect(
+    -44,
+    -22,
+    88,
+    16,
+    8
+  );
+
+  ctx.fill();
+
+
+  if (bites >= 1) {
+
+    ctx.globalCompositeOperation =
+      'destination-out';
+
+    ctx.beginPath();
+
+    ctx.arc(
+      25,
+      -5,
+      18,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fill();
+
+    ctx.globalCompositeOperation =
+      'source-over';
+
+  }
+
+
+  if (bites >= 2) {
+
+    ctx.globalCompositeOperation =
+      'destination-out';
+
+    ctx.beginPath();
+
+    ctx.arc(
+      -20,
+      -5,
+      20,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fill();
+
+    ctx.globalCompositeOperation =
+      'source-over';
+
+  }
+
+
+  ctx.restore();
+
+}
+
+
+/* =========================================================
+   BALLOT BOX
+   ========================================================= */
+
+function drawBallotBox(x, y) {
+
+  ctx.save();
+
+  ctx.translate(x, y);
+
+  ctx.fillStyle =
+    'rgba(0,0,0,0.3)';
+
+  ctx.beginPath();
+
+  ctx.ellipse(
+    0,
+    20,
+    45,
+    8,
+    0,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#cbd5e1';
+
+  ctx.beginPath();
+
+  ctx.roundRect(
+    -35,
+    -25,
+    70,
+    50,
+    8
+  );
+
+  ctx.fill();
+
+  ctx.strokeStyle =
+    '#64748b';
+
+  ctx.lineWidth =
+    3;
+
+  ctx.stroke();
+
+
+  ctx.fillStyle =
+    '#0f172a';
+
+  ctx.fillRect(
+    -18,
+    -21,
+    36,
+    4
+  );
+
+
+  ctx.fillStyle =
+    '#3b82f6';
+
+  ctx.fillRect(
+    -12,
+    -5,
+    24,
+    20
+  );
+
+  ctx.fillStyle =
+    '#ffffff';
+
+  ctx.font =
+    'bold 12px sans-serif';
+
+  ctx.fillText(
+    '🗳️',
+    -8,
+    10
+  );
+
+
+  ctx.restore();
+
+}
+
+
+/* =========================================================
+   ZOMBIE
+   ========================================================= */
+
+function drawZombieCaci(x, y) {
+
+  ctx.save();
+
+  let shakeX = 0;
+
+  if (zombieImpactAnim > 0) {
+
+    shakeX =
+      (Math.random() - 0.5) *
+      zombieImpactAnim *
+      2;
+
+    zombieImpactAnim *= 0.82;
+
+  }
+
+
+  ctx.translate(
+    x + shakeX,
+    y
+  );
+
+
+  ctx.fillStyle =
+    'rgba(0,0,0,0.4)';
+
+  ctx.beginPath();
+
+  ctx.ellipse(
+    0,
+    75,
+    38,
+    10,
+    0,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#1e293b';
+
+  ctx.beginPath();
+
+  ctx.roundRect(
+    -32,
+    15,
+    64,
+    65,
+    10
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#16a34a';
+
+  ctx.beginPath();
+
+  ctx.arc(
+    0,
+    -28,
+    40,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#ffffff';
+
+  ctx.beginPath();
+
+  ctx.arc(
+    -14,
+    -34,
+    10,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.arc(
+    14,
+    -34,
+    10,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#dc2626';
+
+  ctx.beginPath();
+
+  ctx.arc(
+    -14,
+    -34,
+    5,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.arc(
+    14,
+    -34,
+    5,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  if (
+    gameState === 'VULNERABLE' ||
+    gameState === 'ATTACKING'
+  ) {
+
+    ctx.fillStyle =
+      '#450a0a';
+
+    ctx.beginPath();
+
+    ctx.ellipse(
+      0,
+      -6,
+      18,
+      22,
+      0,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    ctx.fillStyle =
+      '#ffffff';
+
+    ctx.fillRect(
+      -10,
+      -22,
+      6,
+      8
+    );
+
+    ctx.fillRect(
+      4,
+      -22,
+      6,
+      8
+    );
+
+  }
+
+  else {
+
+    ctx.strokeStyle =
+      '#020617';
+
+    ctx.lineWidth =
+      4;
+
+    ctx.beginPath();
+
+    ctx.arc(
+      0,
+      -8,
+      14,
+      0.1 * Math.PI,
+      0.9 * Math.PI,
+      true
+    );
+
+    ctx.stroke();
+
+  }
+
+
+  ctx.restore();
+
+}
+
+
+/* =========================================================
+   STUDENT LEARNING
+   ========================================================= */
+
+function drawStudentCaciLearning(x, y) {
+
+  ctx.save();
+
+  ctx.translate(x, y);
+
+
+  ctx.fillStyle =
+    'rgba(0,0,0,0.4)';
+
+  ctx.beginPath();
+
+  ctx.ellipse(
+    0,
+    75,
+    38,
+    10,
+    0,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#1e3a8a';
+
+  ctx.beginPath();
+
+  ctx.roundRect(
+    -32,
+    15,
+    64,
+    65,
+    10
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#ffffff';
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    -10,
+    15
+  );
+
+  ctx.lineTo(
+    0,
+    35
+  );
+
+  ctx.lineTo(
+    10,
+    15
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#dc2626';
+
+  ctx.fillRect(
+    -3,
+    20,
+    6,
+    25
+  );
+
+
+  ctx.fillStyle =
+    '#84cc16';
+
+  ctx.beginPath();
+
+  ctx.arc(
+    0,
+    -28,
+    40,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#ffffff';
+
+  ctx.beginPath();
+
+  ctx.arc(
+    -14,
+    -34,
+    9,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.arc(
+    14,
+    -34,
+    9,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#2563eb';
+
+  ctx.beginPath();
+
+  ctx.arc(
+    -14,
+    -34,
+    4,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.arc(
+    14,
+    -34,
+    4,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.strokeStyle =
+    '#020617';
+
+  ctx.lineWidth =
+    2.5;
+
+  ctx.strokeRect(
+    -22,
+    -42,
+    16,
+    14
+  );
+
+  ctx.strokeRect(
+    6,
+    -42,
+    16,
+    14
+  );
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    -6,
+    -35
+  );
+
+  ctx.lineTo(
+    6,
+    -35
+  );
+
+  ctx.stroke();
+
+
+  ctx.fillStyle =
+    '#020617';
+
+  ctx.fillRect(
+    -20,
+    -70,
+    40,
+    10
+  );
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    0,
+    -88
+  );
+
+  ctx.lineTo(
+    40,
+    -70
+  );
+
+  ctx.lineTo(
+    0,
+    -52
+  );
+
+  ctx.lineTo(
+    -40,
+    -70
+  );
+
+  ctx.closePath();
+
+  ctx.fill();
+
+
+  ctx.restore();
+
+}
+
+
+/* =========================================================
+   STUDENT TEACHING
+   ========================================================= */
+
+function drawStudentCaciTeaching(x, y) {
+
+  ctx.save();
+
+  ctx.translate(x, y);
+
+
+  ctx.fillStyle =
+    'rgba(0,0,0,0.4)';
+
+  ctx.beginPath();
+
+  ctx.ellipse(
+    0,
+    75,
+    38,
+    10,
+    0,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#312e81';
+
+  ctx.beginPath();
+
+  ctx.roundRect(
+    -32,
+    15,
+    64,
+    65,
+    10
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#ffffff';
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    -10,
+    15
+  );
+
+  ctx.lineTo(
+    0,
+    35
+  );
+
+  ctx.lineTo(
+    10,
+    15
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#facc15';
+
+  ctx.fillRect(
+    -3,
+    20,
+    6,
+    25
+  );
+
+
+  ctx.fillStyle =
+    '#fdba74';
+
+  ctx.beginPath();
+
+  ctx.arc(
+    0,
+    -28,
+    40,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#ffffff';
+
+  ctx.beginPath();
+
+  ctx.arc(
+    -14,
+    -34,
+    9,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.arc(
+    14,
+    -34,
+    9,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#0f172a';
+
+  ctx.beginPath();
+
+  ctx.arc(
+    -14,
+    -34,
+    4,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.arc(
+    14,
+    -34,
+    4,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.strokeStyle =
+    '#020617';
+
+  ctx.lineWidth =
+    2.5;
+
+  ctx.strokeRect(
+    -22,
+    -42,
+    16,
+    14
+  );
+
+  ctx.strokeRect(
+    6,
+    -42,
+    16,
+    14
+  );
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    -6,
+    -35
+  );
+
+  ctx.lineTo(
+    6,
+    -35
+  );
+
+  ctx.stroke();
+
+
+  ctx.strokeStyle =
+    '#d97706';
+
+  ctx.lineWidth =
+    4;
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    -30,
+    20
+  );
+
+  ctx.lineTo(
+    -65,
+    -15
+  );
+
+  ctx.stroke();
+
+
+  ctx.fillStyle =
+    '#020617';
+
+  ctx.fillRect(
+    -20,
+    -70,
+    40,
+    10
+  );
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    0,
+    -88
+  );
+
+  ctx.lineTo(
+    40,
+    -70
+  );
+
+  ctx.lineTo(
+    0,
+    -52
+  );
+
+  ctx.lineTo(
+    -40,
+    -70
+  );
+
+  ctx.closePath();
+
+  ctx.fill();
+
+
+  ctx.restore();
+
+}
+
+
+/* =========================================================
+   GRADUATE
+   ========================================================= */
+
+function drawGraduateStudentCaci(x, y) {
+
+  ctx.save();
+
+  ctx.translate(x, y);
+
+
+  ctx.fillStyle =
+    'rgba(0,0,0,0.4)';
+
+  ctx.beginPath();
+
+  ctx.ellipse(
+    0,
+    95,
+    45,
+    10,
+    0,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#0f172a';
+
+  ctx.beginPath();
+
+  ctx.roundRect(
+    -42,
+    15,
+    84,
+    85,
+    12
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#ffffff';
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    -15,
+    15
+  );
+
+  ctx.lineTo(
+    0,
+    45
+  );
+
+  ctx.lineTo(
+    15,
+    15
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#dc2626';
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    0,
+    20
+  );
+
+  ctx.lineTo(
+    8,
+    38
+  );
+
+  ctx.lineTo(
+    0,
+    70
+  );
+
+  ctx.lineTo(
+    -8,
+    38
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle =
+    '#fdba74';
+
+  ctx.beginPath();
+
+  ctx.arc(
+    0,
+    -30,
+    42,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+
+  ctx.strokeStyle =
+    '#020617';
+
+  ctx.lineWidth =
+    3.5;
+
+  ctx.strokeRect(
+    -25,
+    -42,
+    21,
+    18
+  );
+
+  ctx.strokeRect(
+    4,
+    -42,
+    21,
+    18
+  );
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    -4,
+    -33
+  );
+
+  ctx.lineTo(
+    4,
+    -33
+  );
+
+  ctx.stroke();
+
+
+  ctx.beginPath();
+
+  ctx.arc(
+    0,
+    -18,
+    18,
+    0.1 * Math.PI,
+    0.9 * Math.PI
+  );
+
+  ctx.stroke();
+
+
+  ctx.font =
+    '28px sans-serif';
+
+  ctx.fillText(
+    '⚖️',
+    -68,
+    10
+  );
+
+  ctx.fillText(
+    '📜',
+    42,
+    10
+  );
+
+
+  ctx.fillStyle =
+    '#020617';
+
+  ctx.fillRect(
+    -26,
+    -74,
+    52,
+    12
+  );
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    0,
+    -96
+  );
+
+  ctx.lineTo(
+    50,
+    -75
+  );
+
+  ctx.lineTo(
+    0,
+    -54
+  );
+
+  ctx.lineTo(
+    -50,
+    -75
+  );
+
+  ctx.closePath();
+
+  ctx.fill();
+
+
+  ctx.strokeStyle =
+    '#facc15';
+
+  ctx.lineWidth =
+    3;
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    0,
+    -75
+  );
+
+  ctx.lineTo(
+    38,
+    -60
+  );
+
+  ctx.lineTo(
+    38,
+    -48
+  );
+
+  ctx.stroke();
+
+
+  ctx.restore();
+
+}
+
+
+/* =========================================================
+   WEAPON
+   ========================================================= */
+
+function drawWeaponAnimation(
+  targetX,
+  targetY,
+  segment
+) {
+
+  weaponAnim.progress +=
+    0.18;
+
+  if (weaponAnim.progress >= 1) {
+
+    weaponAnim.active = false;
+
+    return;
+
+  }
+
+
+  ctx.save();
+
+  ctx.translate(
+    targetX,
+    targetY
+  );
+
+
+  const swing =
+    Math.sin(
+      weaponAnim.progress *
+      Math.PI
+    ) * 60;
+
+  ctx.rotate(
+    (-35 + swing) *
+    Math.PI / 180
+  );
+
+
+  if (segment === 1) {
+
+    const weapon =
+      GAME_LEVELS[
+        currentLevelIdx
+      ].weapon;
+
+
+    if (weapon === 'Knjiga') {
+
+      ctx.fillStyle =
+        '#dc2626';
+
+      ctx.beginPath();
+
+      ctx.roundRect(
+        -22,
+        -55,
+        44,
+        62,
+        4
+      );
+
+      ctx.fill();
+
+    }
+
+    else if (weapon === 'Indeks') {
+
+      ctx.fillStyle =
+        '#2563eb';
+
+      ctx.beginPath();
+
+      ctx.roundRect(
+        -20,
+        -50,
+        40,
+        56,
+        4
+      );
+
+      ctx.fill();
+
+    }
+
+    else {
+
+      ctx.fillStyle =
+        '#f59e0b';
+
+      ctx.fillRect(
+        -6,
+        -65,
+        12,
+        72
+      );
+
+    }
+
+  }
+
+  else {
+
+    ctx.fillStyle =
+      '#b45309';
+
+    ctx.fillRect(
+      -6,
+      -60,
+      12,
+      60
+    );
+
+    ctx.fillStyle =
+      '#78350f';
+
+    ctx.beginPath();
+
+    ctx.roundRect(
+      -25,
+      -75,
+      50,
+      22,
+      4
+    );
+
+    ctx.fill();
+
+  }
+
+
+  ctx.restore();
+
+}
+
+
+/* =========================================================
+   VICTORY PARTICLES
+   ========================================================= */
+
+function drawVictoryParticles() {
+
+  for (
+    let i = victoryParticles.length - 1;
+    i >= 0;
+    i--
+  ) {
+
+    const p =
+      victoryParticles[i];
+
+    p.x += p.vx;
+    p.y += p.vy;
+
+    p.vy += 0.1;
+
+    p.life -= 0.015;
+
+
+    if (p.life <= 0) {
+
+      victoryParticles.splice(
+        i,
+        1
+      );
+
+      continue;
+
+    }
+
+
+    ctx.fillStyle =
+      p.color;
+
+    ctx.beginPath();
+
+    ctx.arc(
+      p.x,
+      p.y,
+      p.size,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fill();
+
+  }
+
+}
+
+
+/* =========================================================
+   POP TEXTS
+   ========================================================= */
+
+function drawPopTexts() {
+
+  for (
+    let i = popTexts.length - 1;
+    i >= 0;
+    i--
+  ) {
+
+    const p =
+      popTexts[i];
+
+    p.y -= 1.3;
+
+    p.life -= 0.025;
+
+
+    if (p.life <= 0) {
+
+      popTexts.splice(
+        i,
+        1
+      );
+
+      continue;
+
+    }
+
+
+    ctx.save();
+
+    ctx.font =
+      `900 ${Math.round(
+        22 * p.scale
+      )}px sans-serif`;
+
+    ctx.fillStyle =
+      `rgba(250,204,21,${p.life})`;
+
+    ctx.strokeStyle =
+      `rgba(0,0,0,${p.life})`;
+
+    ctx.lineWidth =
+      4;
+
+    ctx.strokeText(
+      p.text,
+      p.x,
+      p.y
+    );
+
+    ctx.fillText(
+      p.text,
+      p.x,
+      p.y
+    );
+
+    ctx.restore();
+
+  }
+
+}
+
+
+/* =========================================================
+   INITIALIZE
+   ========================================================= */
+
+window.onload = function() {
+
+  resizeCanvas();
+
+  updateHUD();
+
+  drawScene();
+
+};
+
+</script>
+
+</body>
+</html>
